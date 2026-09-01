@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import confetti from "canvas-confetti";
 import { CONTACT_INFO } from "@/lib/data";
+import { sendEnquiryEmail } from "@/lib/emailjs";
 import {
   Sparkles,
   Send,
@@ -64,17 +65,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
     setErrorMessage(null);
 
     try {
-      const response = await fetch("/api/send-enquiry", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Something went wrong. Please try again.");
-      }
+      await sendEnquiryEmail(formData);
 
       setIsSubmitted(true);
       try {
@@ -89,7 +80,9 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
       }
     } catch (err: any) {
       console.error("Contact form submission error:", err);
-      setErrorMessage(err.message || "Failed to send enquiry. Please try again or WhatsApp us directly.");
+      setErrorMessage(
+        err?.text || err?.message || "Failed to send enquiry. Please try again or WhatsApp us directly."
+      );
     } finally {
       setIsSubmitting(false);
     }

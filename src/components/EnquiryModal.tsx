@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import confetti from "canvas-confetti";
 import { CONTACT_INFO } from "@/lib/data";
+import { sendEnquiryEmail } from "@/lib/emailjs";
 import { X, Sparkles, Send, CheckCircle2, MessageCircle } from "lucide-react";
 
 interface EnquiryModalProps {
@@ -73,17 +74,7 @@ export const EnquiryModal: React.FC<EnquiryModalProps> = ({
     setErrorMessage(null);
 
     try {
-      const response = await fetch("/api/send-enquiry", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Something went wrong. Please try again.");
-      }
+      await sendEnquiryEmail(formData);
 
       setIsSubmitted(true);
       try {
@@ -97,8 +88,10 @@ export const EnquiryModal: React.FC<EnquiryModalProps> = ({
         // Safe
       }
     } catch (err: any) {
-      console.error("Enquiry submission error:", err);
-      setErrorMessage(err.message || "Failed to send inquiry. Please try again or WhatsApp us directly.");
+      console.error("EmailJS submission error:", err);
+      setErrorMessage(
+        err?.text || err?.message || "Failed to send inquiry. Please try again or WhatsApp us directly."
+      );
     } finally {
       setIsSubmitting(false);
     }
