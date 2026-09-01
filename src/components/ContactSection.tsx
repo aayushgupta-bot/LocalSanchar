@@ -36,6 +36,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (prefilledCategory) {
@@ -54,15 +55,27 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errorMessage) setErrorMessage(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setErrorMessage(null);
 
-    // Simulate enquiry processing & celebration
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const response = await fetch("/api/send-enquiry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Something went wrong. Please try again.");
+      }
+
       setIsSubmitted(true);
       try {
         confetti({
@@ -74,7 +87,12 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
       } catch (err) {
         // Safe fallback
       }
-    }, 800);
+    } catch (err: any) {
+      console.error("Contact form submission error:", err);
+      setErrorMessage(err.message || "Failed to send enquiry. Please try again or WhatsApp us directly.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const generateWhatsAppLink = () => {
@@ -330,6 +348,12 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                       className="w-full px-4 py-3 rounded-xl bg-brand-navy-950 border border-brand-navy-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-gold-400 focus:ring-1 focus:ring-brand-gold-400 transition-colors resize-none"
                     />
                   </div>
+
+                  {errorMessage && (
+                    <div className="p-3.5 rounded-xl bg-rose-950/80 border border-rose-500/50 text-rose-300 text-xs">
+                      {errorMessage}
+                    </div>
+                  )}
 
                   {/* Submit Button */}
                   <button
